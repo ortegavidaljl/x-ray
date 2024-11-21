@@ -23,6 +23,9 @@ Apart from Python 3.11.9 (minimum), X-Ray needs the following packages to work:
   - [python-dotenv](https://pypi.org/project/python-dotenv/) >= 1.0.1
 - Others:
   - spfquery (it may be available by default in your distro's repositories, or it can be installed from the PERL module installer. The package is called Mail::SPF)
+  - MariaDB (for saving reports)
+  - Postfix and its postfix-mysql package
+  - SpamAssassin and Pyzor
 
 Components available in standard library are not listed. To avoid errors, the script will check if everything is present in every start.
 

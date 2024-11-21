@@ -6,7 +6,7 @@ dnf install python3.11 postfix postfix-mysql spamassassin pyzor mariadb -y
 
 # Install pip and python dependencies
 wget https://bootstrap.pypa.io/get-pip.py -O /tmp/get-pip.py && python3.11 /tmp/get-pip.py
-python3.11 -m pip install aiosmtpd dkimpy dnspython mysql-connector-python uuid-utils python-dotenv
+python3.11 -m pip install aiosmtpd dkimpy dnspython pymysql uuid-utils python-dotenv
 
 # Create virtual user and group for postfix
 groupadd vpostfix && useradd vpostfix -g vpostfix -s /sbin/nologin -c "Virtual postfix user" -d /var/empty
