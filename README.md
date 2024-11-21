@@ -23,6 +23,16 @@ Apart from Python 3.11.9 (minimum), X-Ray needs the following packages to work:
 
 Components available in standard library are not listed. To avoid errors, the script will check if everything is present in every start.
 
+## Example of integration
+
+Here are some gifs of a webapp I made in vue and PHP (Laravel) to be able to create random email accounts and view reports. I think Laravel was a little bit overkill for what the app really does, so I may (or may not) rewrite it using just vanilla PHP. The application is in Spanish, so sorry if you can't read what it says, but I think it's still useful to see how this script could be integrated.
+
+<div align="center">
+  <img width="49.5%" src="/assets/mail_insights_xray1.gif"/>
+  <img width="49.5%" src="/assets/mail_insights_xray2.gif"/>
+  <img width="49.5%" src="/assets/mail_insights_xray3.gif"/>
+</div>
+
 ### Database
 
 The script stores generated reports in a database. The same db is also used for virtual domain/user checks in Postfix. Since there's a lot of information in each report, the generated json is saved directly to the database. By storing the spamassassin, authentication and rbl sub-reports in separate columns, a web application or other service can quickly retrieve what it needs.
