@@ -23,6 +23,14 @@ Apart from Python 3.11.9 (minimum), X-Ray needs the following packages to work:
 
 Components available in standard library are not listed. To avoid errors, the script will check if everything is present in every start.
 
+### Database
+
+The script stores generated reports in a database. The same db is also used for virtual domain/user checks in Postfix. Since there's a lot of information in each report, the generated json is saved directly to the database. By storing the spamassassin, authentication and rbl sub-reports in separate columns, a web application or other service can quickly retrieve what it needs.
+
+<div align="center">
+  <img src="/assets/database_tables.png" alt="Screenshot of the database schema"/>
+</div>
+
 ## Installation script
 
 This repo also contains a Bash script called install.sh to simplify the installation process of the script and its environment (Postfix included). The script is is made for AlmaLinux 8.x and newer (it can be modified to run on other systems), and perform the following tasks:
@@ -35,7 +43,9 @@ This repo also contains a Bash script called install.sh to simplify the installa
 - Configures Spamassassin and integrates it also with Postfix.
 - Creates a systemd service for X-Ray, and enables/start services so everything can work together.
 
-Before running the installer or the X-Ray script, it is necessary to specify some data in the .env file.
+> [!WARNING]
+> * Before running the installer or the X-Ray script, it is necessary to specify some data in the .env file.
+> * If you don't want to use the installation script, make sure to create a domain in the "domains" table. Of course, one or more email names are needed in order for emails to be received. You can use another script or webapp to generate them as needed.
 
 ## Configuration
 
