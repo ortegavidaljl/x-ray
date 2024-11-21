@@ -14,12 +14,15 @@ All contributions are welcomed.
 
 Apart from Python 3.11.9 (minimum), X-Ray needs the following packages to work:
 
-- [aiosmtpd](https://pypi.org/project/aiosmtpd/) >= 1.4.6
-- [pymysql](https://pypi.org/project/pymysql/) >= 1.1.1
-- [dkimpy](https://pypi.org/project/dkimpy/) >= 1.1.7
-- [dnspython](https://pypi.org/project/dnspython/) >= 2.6.1
-- [uuid_utils](https://pypi.org/project/uuid-utils/) >= 0.8.0
-- [python-dotenv](https://pypi.org/project/python-dotenv/) >= 1.0.1
+- Python:
+  - [aiosmtpd](https://pypi.org/project/aiosmtpd/) >= 1.4.6
+  - [pymysql](https://pypi.org/project/pymysql/) >= 1.1.1
+  - [dkimpy](https://pypi.org/project/dkimpy/) >= 1.1.7
+  - [dnspython](https://pypi.org/project/dnspython/) >= 2.6.1
+  - [uuid_utils](https://pypi.org/project/uuid-utils/) >= 0.8.0
+  - [python-dotenv](https://pypi.org/project/python-dotenv/) >= 1.0.1
+- Others:
+  - spfquery (it may be available by default in your distro's repositories, or it can be installed from the PERL module installer. The package is called Mail::SPF)
 
 Components available in standard library are not listed. To avoid errors, the script will check if everything is present in every start.
 
