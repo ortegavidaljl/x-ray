@@ -3,7 +3,7 @@
 from aiosmtpd.controller import Controller
 
 import time
-from utils.config import log, check_requirements, VERSION, PORT, HOSTNAME
+from utils.config import log, check_db, VERSION, PORT, HOSTNAME
 from utils.report import generate_reports
 from utils.database import save_report
 
@@ -28,7 +28,7 @@ class CustomHandler:
     return '250 OK'
 
 if __name__ == '__main__':
-  check_requirements()
+  check_db()
   log(f"Requirements and config checked; Starting...")
 
   handler = CustomHandler()
