@@ -4,10 +4,6 @@ This is the repo for X-Ray, a project written in Python that analyses an incomin
 
 The script is made to work as an advanced Postfix content filter, though it could be modified to work without it. The report has been designed to feed a webapp, so it is possible to make a self-hosted mailing checking platform.
 
-All reports are saved in a MySQL database. Below there's an image showing its structure and a dump:
-
-Database can be imported directly using the file .sql provided in this repo.
-
 All contributions are welcomed.
 
 ## Requirements
@@ -41,7 +37,7 @@ Here are some gifs of a webapp I made in vue and PHP (Laravel) to be able to cre
 
 ### Database
 
-The script stores generated reports in a database. The same db is also used for virtual domain/user checks in Postfix. Since there's a lot of information in each report, the generated json is saved directly to the database. By storing the spamassassin, authentication and rbl sub-reports in separate columns, a web application or other service can quickly retrieve what it needs.
+The script stores generated reports in a database. The same db is also used for virtual domain/user checks in Postfix. Since there's a lot of information in each report, the generated json is saved directly to the database. By storing the spamassassin, authentication and rbl sub-reports in separate columns, a web application or other service can quickly retrieve what it needs. Database can be imported directly using the file .sql provided in this repo.
 
 <div align="center">
   <img src="/assets/database_tables.png" alt="Screenshot of the database schema"/>
@@ -91,3 +87,26 @@ As mentioned before, the script needs some data to work. These are the items tha
 </table>
 
 \* Only mandatory if using the installer script.
+
+## Acknowledgements and Licenses
+
+This project wouldn't be possible without these amazing packages :heart: :
+
+- aiosmtpd
+  - License: [Apache 2.0](https://github.com/aio-libs/aiosmtpd/blob/master/LICENSE)
+  - Repo: https://github.com/aio-libs/aiosmtpd/ 
+- pymysql
+  - License: [MIT License](https://github.com/PyMySQL/PyMySQL/blob/main/LICENSE)
+  - Repo: https://github.com/PyMySQL/PyMySQL
+- dkimpy
+  - License: [zlib](https://git.launchpad.net/dkimpy/tree/LICENSE)
+  - Repo: https://launchpad.net/dkimpy
+- dnspython
+  - License: [ISC License](https://github.com/rthalley/dnspython/blob/main/LICENSE)
+  - Repo: https://github.com/rthalley/dnspython
+- uuid_utils
+  - License: [BSD 3-Clause](https://github.com/aminalaee/uuid-utils/blob/main/LICENSE.md)
+  - Repo: https://github.com/aminalaee/uuid-utils
+- python-dotenv
+  - License: [BSD 3-Clause](https://github.com/theskumar/python-dotenv/blob/main/LICENSE)
+  - Repo: https://github.com/theskumar/python-dotenv 
