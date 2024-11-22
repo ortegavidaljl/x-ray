@@ -24,7 +24,7 @@ async def check_spamassassin(email, score):
     if email['X-Spam-Status'] == "YES":
       check_result['message'] = "sa:nok"
       check_result['status'] = "warning"
-      check_result["subtract"] = score.subtract("spamassassin", Score.SPAMASSASSIN_SPAM)
+      check_result["subtract"] = score.subtract("spamassassin", Score.SPAMASSASSIN_SPAM.value)
     else:
       if Decimal(3) <= Decimal(email['X-Spam-Score']) <= Decimal(4.99):
         check_result['message'] = "sa:shouldReview"

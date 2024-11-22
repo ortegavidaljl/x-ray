@@ -23,8 +23,14 @@ async def generate_reports(envelope):
   received_msg = email.message_from_bytes(data, policy=email.policy.SMTP)
 
   email_trace = get_trace(received_msg)
-  helo = email_trace[1]['from'][0]
-  ip = email_trace[1]['from'][1]
+  
+  for item in email_trace:
+    if 'from' in item:
+      sender = item['from']
+      break
+        
+  helo = sender[0]
+  ip = sender[1]
 
   # Ejecutar tareas en paralelo
   spam_task = asyncio.create_task(check_spamassassin(received_msg, score))

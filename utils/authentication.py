@@ -48,12 +48,12 @@ async def verify_spf(mail_from, ip_address, helo, score):
 
   if query_result.returncode == 1 or query_result.returncode == 2:
     verify_result["status"] = "error"
-    verify_result["subtract"] = score.subtract("spf", Score.SPF_ERR)
+    verify_result["subtract"] = score.subtract("spf", Score.SPF_ERR.value)
   elif query_result.returncode == 3:
     verify_result["status"] = "warning"
   elif query_result.returncode > 0:
     verify_result["status"] = "warning"
-    verify_result["subtract"] = score.subtract("spf", Score.SPF_WARN)
+    verify_result["subtract"] = score.subtract("spf", Score.SPF_WARN.value)
 
   spf_check = {
     'name': "dns",
@@ -70,7 +70,7 @@ async def verify_spf(mail_from, ip_address, helo, score):
       if spf_count >= 2:
         verify_result["message"] = "spf:moreThanOne"
         verify_result["status"] = "error"
-        verify_result["subtract"] = score.subtract("spf", Score.SPF_ERR)
+        verify_result["subtract"] = score.subtract("spf", Score.SPF_ERR.value)
   except dns.asyncresolver.NoAnswer as e:
     spf_check['result'] = "The DNS does not contain an answer"
   except dns.resolver.NoNameservers as e:
@@ -99,7 +99,7 @@ async def verify_rdns(ip, helo, rdns, score):
   if helo != rdns:
     verify_result["message"] = "rdns:nok"
     verify_result["status"] = "warning"
-    verify_result["subtract"] = score.subtract("rdns", Score.RDNS_WARN)
+    verify_result["subtract"] = score.subtract("rdns", Score.RDNS_WARN.value)
 
   return verify_result
 
@@ -156,15 +156,15 @@ async def verify_domain_mx(domain, score):
       mx_check['result'].append([rdata.preference, rdata.exchange.to_unicode()])
   except dns.asyncresolver.NoAnswer as e:
     verify_result['mx'] = "Domain doesn't have MX records"
-    verify_result["subtract"] = score.subtract("mx", Score.MX_WARN)
+    verify_result["subtract"] = score.subtract("mx", Score.MX_WARN.value)
   except dns.resolver.NoNameservers as e:
     verify_result['status'] = "error"
     verify_result['mx'] = "All nameservers failed to answer the query"
-    verify_result["subtract"] = score.subtract("mx", Score.MX_WARN)
+    verify_result["subtract"] = score.subtract("mx", Score.MX_WARN.value)
   except dns.asyncresolver.NXDOMAIN as e:
     verify_result['status'] = "error"
     verify_result['mx'] = "Domain doesn't have MX records"
-    verify_result["subtract"] = score.subtract("mx", Score.MX_WARN)
+    verify_result["subtract"] = score.subtract("mx", Score.MX_WARN.value)
 
   verify_result['tests'].append(mx_check)
 
@@ -185,7 +185,7 @@ async def verify_dkim(domain, email, email_str, score):
       "name": 'dkimpy',
       "result": 'No DKIM-Signature header present'
     })
-    verify_result["subtract"] = score.subtract("dkim", Score.DKIM_NO)
+    verify_result["subtract"] = score.subtract("dkim", Score.DKIM_NO.value)
     return verify_result
   
   try:
@@ -206,7 +206,7 @@ async def verify_dkim(domain, email, email_str, score):
       "name": 'dkimpy',
       "result": 'Message did not pass DKIM validation'
     })
-    verify_result["subtract"] = score.subtract("dkim", Score.DKIM_ERR)
+    verify_result["subtract"] = score.subtract("dkim", Score.DKIM_ERR.value)
 
   pattern_dkim = r"v=((?P<version>[^;]+))|a=((?P<algorithm>[^;]+))|c=((?P<canonicalization>[^;]+))|d=((?P<domain>[^;]+))|s=((?P<selector>[^;]+))|t=((?P<timestamp>[^;]+))|bh=((?P<body_hash>[^;]+))|h=((?P<signed_headers>[^;]+))|b=((?P<signature>[^;]+))"
   

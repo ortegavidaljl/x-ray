@@ -34,7 +34,7 @@ async def check_rbl(ip_address, score):
   }
 
   if is_ip_listed:
-    check_result["subtract"] = score.subtract("rbl", Score.RBL_ERR)
+    check_result["subtract"] = score.subtract("rbl", Score.RBL_ERR.value)
 
   log(f"RBL Check finished: {check_result['count']} lists in {check_result['processed_in']} seconds")
 
