@@ -1,4 +1,6 @@
 # X-Ray
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fortegavidaljl%2Fx-ray.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fortegavidaljl%2Fx-ray?ref=badge_shield)
+
 
 This is the repo for X-Ray, a project written in Python that analyses an incoming email and generates a complete report, including information about sender authentication, server configuration and RBL listing, among other useful things.
 
@@ -91,3 +93,6 @@ As mentioned before, the script needs some data to work. These are the items tha
 </table>
 
 \* Only mandatory if using the installer script.
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fortegavidaljl%2Fx-ray.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fortegavidaljl%2Fx-ray?ref=badge_large)
