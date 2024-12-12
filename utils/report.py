@@ -74,7 +74,7 @@ def get_header(score):
     return f"Uhmm... Something unexpected happened"
   
 def get_trace(email):
-  received_headers = list(reversed(email.get_all('Received')))
+  received_headers = list(email.get_all('Received')) #list(reversed(email.get_all('Received')))
   trace = []
 
   pattern_from = r"from\s+(?P<sender_name>[^()]+)\s+\(([^()]+)\s+\[(?P<sender_ip>[^\]]+)\]\)\s+(\(.*\)\s)?(by)?\s+(?P<recipient_name>[^()]+)\s+.*;\s+(?P<timestamp>.*)"

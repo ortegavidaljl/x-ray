@@ -45,6 +45,7 @@ async def check_single_rbl(ip_address, rbl_name, rbl_data):
   exception_to_result = {
       dns.asyncresolver.NXDOMAIN: 'Not listed',
       dns.exception.Timeout: 'Timeout',
+      dns.resolver.LifetimeTimeout: 'Timeout',
       dns.asyncresolver.NoAnswer: 'Unknown',
       dns.resolver.NoNameservers: 'NoNS'
   }
