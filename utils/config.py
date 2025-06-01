@@ -1,43 +1,77 @@
-from dotenv import dotenv_values
-import sys
-import importlib.util
-import subprocess
+from dotenv import load_dotenv
+from os import getenv
+from sys import exit
+from importlib.util import find_spec
+import pymysql.cursors
+from subprocess import run
+import logging
+from urllib import request
+import re
 
-dependencies = ["aiosmtpd", "pymysql", "asyncio", "dkim", "dns", "uuid_utils", "dotenv"]
+logger = logging.getLogger("x-ray")
+logger.setLevel(logging.INFO)
+handler = logging.StreamHandler()
+formatter = logging.Formatter('%(asctime)s | %(levelname)s > %(message)s', datefmt='%d/%m/%Y %H:%M:%S')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+logger.propagate = False
 
-for i in dependencies:
-  if importlib.util.find_spec(i) is None:
-    message=f"ERROR: Required dependency '{i}' is not installed."
-    print(message)
-    sys.exit(1)
-
-config = dotenv_values(".env")
-
-VERSION=0.8
-PORT = int(config.get("PORT", 10031))
-HOSTNAME = config.get("HOSTNAME", "127.0.0.1")
-
-DB_HOST = config.get("DB_HOST", "127.0.0.1")
-DB_PORT = int(config.get("DB_PORT", 3306))
-DB_DATABASE = config.get("DB_DATABASE")
-DB_USERNAME = config.get("DB_USERNAME")
-DB_PASSWORD = config.get("DB_PASSWORD")
-
-SCORE_SPAMASSASSIN_SPAM = float(config.get("SCORE_SPAMASSASSIN_SPAM", 3))
-SCORE_SPF_ERR = float(config.get("SCORE_SPF_ERR", 3))
-SCORE_SPF_WARN = float(config.get("SCORE_SPF_WARN", 1.5))
-SCORE_MX_WARN = float(config.get("SCORE_MX_WARN", 1))
-SCORE_RDNS_WARN = float(config.get("SCORE_RDNS_WARN", 1))
-SCORE_DKIM_NO = float(config.get("SCORE_DKIM_NO", 1))
-SCORE_DKIM_ERR = float(config.get("SCORE_DKIM_ERR", 3))
-SCORE_RBL_ERR = float(config.get("SCORE_RBL_ERR", 1.5))
-
-def check_db():
-  if not DB_USERNAME or not DB_PASSWORD:
-    message="ERROR: DB_USERNAME and DB_PASSWORD must be defined in '.env' file."
-    print(message)
-    sys.exit(1)
+dependencies = ["aiosmtpd", "pymysql", "dkim", "dns", "uuid_utils", "dotenv", "cryptography"]
 
 # This function lets us output data into the postfix log file.
 def log(message, priority='info'):
-  subprocess.run(['postlog', '-p', priority, '-t', 'xray', message])
+  log_func = getattr(logger, priority.lower(), logger.info)
+  log_func(message)
+  #run(['postlog', '-p', priority, '-t', 'xray', message])
+
+for i in dependencies:
+  if find_spec(i) is None:
+    log(f"Required dependency '{i}' is not installed.", "error")
+    exit(1)
+
+load_dotenv()
+
+VERSION = 0.8
+
+PORT = int(getenv("PORT", 10031))
+HOSTNAME = getenv("HOSTNAME", "127.0.0.1")
+
+DB_HOST = getenv("DB_HOST", "127.0.0.1")
+DB_PORT = int(getenv("DB_PORT", 3306))
+DB_DATABASE = getenv("DB_DATABASE")
+DB_USERNAME = getenv("DB_USERNAME")
+DB_PASSWORD = getenv("DB_PASSWORD")
+
+ENCRYPTION = getenv("ENCRYPTION", "false").lower() in ("true", "1", "yes", "on")
+
+SCORE_SPAMASSASSIN_SPAM = float(getenv("SCORE_SPAMASSASSIN_SPAM", 3))
+SCORE_SPF_ERR = float(getenv("SCORE_SPF_ERR", 3))
+SCORE_SPF_WARN = float(getenv("SCORE_SPF_WARN", 1.5))
+SCORE_MX_WARN = float(getenv("SCORE_MX_WARN", 1))
+SCORE_RDNS_WARN = float(getenv("SCORE_RDNS_WARN", 1))
+SCORE_DKIM_NO = float(getenv("SCORE_DKIM_NO", 1))
+SCORE_DKIM_ERR = float(getenv("SCORE_DKIM_ERR", 3))
+SCORE_RBL_ERR = float(getenv("SCORE_RBL_ERR", 1.5))
+
+def check_db():
+  if not DB_USERNAME or not DB_PASSWORD:
+    log("DB_USERNAME and DB_PASSWORD must be defined in environment.", "critical")
+    exit(1)
+  
+  try:
+    connection = pymysql.connect(host=DB_HOST,
+                              port=DB_PORT,
+                              user=DB_USERNAME,
+                              password=DB_PASSWORD,
+                              database=DB_DATABASE,
+                              charset='utf8mb4',
+                              cursorclass=pymysql.cursors.DictCursor)
+
+    with connection.cursor() as cursor:
+      sql_get = "SELECT @version;"
+      cursor.execute(sql_get)
+      result = cursor.fetchone()
+  except Exception as e:
+    log(f"Unable to connect to the database. Please check your credentials and database status.", "critical")
+    log(e, "debug")
+    exit(1)

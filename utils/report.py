@@ -13,7 +13,7 @@ from utils.spamassassin import check_spamassassin
 from utils.authentication import check_authentication
 from utils.scoring import EmailScore
 
-async def generate_reports(envelope):
+async def generate_report(envelope):
   start_proc_time = time.time()
 
   score = EmailScore()
@@ -23,6 +23,9 @@ async def generate_reports(envelope):
   received_msg = email.message_from_bytes(data, policy=email.policy.SMTP)
 
   email_trace = get_trace(received_msg)
+
+  if not email_trace:
+    raise Exception("The email trace shouldn't be empty. This might indicate that the message was sent directly to this service.")
   
   for item in email_trace:
     if 'from' in item:
@@ -58,7 +61,12 @@ async def generate_reports(envelope):
     "trace": email_trace
   }
 
-  return general_report, spamassassin_report, authentication_report, rbl_report
+  return {
+    "general": general_report,
+    "spamassassin": spamassassin_report,
+    "authentication": authentication_report,
+    "rbl": rbl_report
+  }
 
 
 def get_header(score):
@@ -74,13 +82,14 @@ def get_header(score):
     return f"Uhmm... Something unexpected happened"
   
 def get_trace(email):
-  received_headers = list(email.get_all('Received')) #list(reversed(email.get_all('Received')))
+  received_headers = list(email.get_all('Received') or []) #list(reversed(email.get_all('Received')))
+  
   trace = []
 
   pattern_from = r"from\s+(?P<sender_name>[^()]+)\s+\(([^()]+)\s+\[(?P<sender_ip>[^\]]+)\]\)\s+(\(.*\)\s)?(by)?\s+(?P<recipient_name>[^()]+)\s+.*;\s+(?P<timestamp>.*)"
   pattern_by = r"by\s+(?P<sender_name>[\S]+)\s*(with)?\s+.*;\s+(?P<timestamp>.+)"
 
-  for header in received_headers:
+  for header in list(received_headers):
     match_from = re.search(pattern_from, header)
     match_by = re.search(pattern_by, header)
     if match_from:

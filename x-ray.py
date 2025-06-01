@@ -2,30 +2,34 @@
 
 from aiosmtpd.controller import Controller
 
+import signal
 import time
+import sys
 from utils.config import log, check_db, VERSION, PORT, HOSTNAME
-from utils.report import generate_reports
+from utils.report import generate_report
 from utils.database import save_report
+
+running = True
+
+def signal_handler(sig, frame):
+  global running
+  running = False
+  log("Exit requested by signal.")
+
+signal.signal(signal.SIGINT, signal_handler)   # Ctrl+C
+signal.signal(signal.SIGTERM, signal_handler)  # kill o system stop
 
 class CustomHandler:
   async def handle_DATA(self, server, session, envelope):
 
     log(f"Processing message from {envelope.mail_from}")
-
-    #helo = session.host_name
     
-    # Remove in production, we don't need the email to actually be delivered
-    #with SMTPClient('127.0.0.1', port=10032) as server:
-    #  server.sendmail(mail_from, rcpt_tos, data)
-    #  server.quit()
-
-    #ip = socket.gethostbyname(email_trace[-2]['from'][0])
-
-    general_report, spamassassin_report, authentication_report, rbl_report = await generate_reports(envelope)
-    
-    await save_report(general_report['sent_to'], general_report, spamassassin_report, authentication_report, rbl_report)
-
-    return '250 OK'
+    try:
+      await save_report(await generate_report(envelope))
+      return '250 OK'
+    except Exception as e:
+      log(f"Message could not be processed: {e}", "error")
+      return '451 Temporary processing error'
 
 if __name__ == '__main__':
   check_db()
@@ -37,5 +41,10 @@ if __name__ == '__main__':
   # Run the event loop in a separate thread.
   controller.start()
 
-  while True:
-    time.sleep(10)
+  try:
+    while running:
+      time.sleep(1)
+  finally:
+    controller.stop()
+    log("Service stopped.")
+    sys.exit(0)

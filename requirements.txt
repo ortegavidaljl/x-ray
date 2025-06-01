@@ -1,0 +1,7 @@
+aiosmtpd>=1.4.6
+PyMySQL>=1.1.1
+dkimpy>=1.1.7
+dnspython>=2.6.1
+uuid_utils>=0.10.0
+python-dotenv>=1.0.1
+cryptography>=45.0.1

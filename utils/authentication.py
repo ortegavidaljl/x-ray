@@ -251,7 +251,6 @@ async def verify_arc(email):
     "tests": []
   }
 
-  #TODO: this doesn't seem to work...
   try:
     cv, res, reason = dkim.arc_verify(email)
 

@@ -10,16 +10,17 @@ All contributions are welcomed.
 
 Apart from Python 3.11.9 (minimum), X-Ray needs the following packages to work:
 
-- Python:
+- Python (can be installed using requirements.txt):
   - [aiosmtpd](https://pypi.org/project/aiosmtpd/) >= 1.4.6
   - [pymysql](https://pypi.org/project/pymysql/) >= 1.1.1
   - [dkimpy](https://pypi.org/project/dkimpy/) >= 1.1.7
   - [dnspython](https://pypi.org/project/dnspython/) >= 2.6.1
   - [uuid_utils](https://pypi.org/project/uuid-utils/) >= 0.8.0
   - [python-dotenv](https://pypi.org/project/python-dotenv/) >= 1.0.1
+  - [cryptography](https://pypi.org/project/cryptography/) >= 45.0.1
 - Others:
   - spfquery (it may be available by default in your distro's repositories, or it can be installed from the PERL module installer. The package is called Mail::SPF)
-  - MariaDB (for saving reports)
+  - MariaDB server
   - Postfix and its postfix-mysql package
   - SpamAssassin and Pyzor
 
@@ -37,7 +38,7 @@ Here are some gifs of a webapp I made in vue and PHP (Laravel) to be able to cre
 
 ### Database
 
-The script stores generated reports in a database. The same db is also used for virtual domain/user checks in Postfix. Since there's a lot of information in each report, the generated json is saved directly to the database. By storing the spamassassin, authentication and rbl sub-reports in separate columns, a web application or other service can quickly retrieve what it needs. Database can be imported directly using the file .sql provided in this repo.
+The script stores generated reports in a database. The same db is also used for virtual domain/user checks in Postfix. Since there's a lot of information in each report, the generated json is saved directly into the database. A sql file with the needed structure is provided in this repo, so it can be imported into your database.
 
 <div align="center">
   <img src="/assets/database_tables.png" alt="Screenshot of the database schema"/>
@@ -76,6 +77,7 @@ As mentioned before, the script needs some data to work. These are the items tha
   <tr><td>DB_PASSWORD</td><td>The user's password. This field is also <strong>needed</strong>.</td></tr>
 
   <tr><td colspan="2" align="center">:warning: Optional</td></tr>
+  <tr><td>ENCRYPTION</td><td>If enabled, clients must generate a key pair and upload their public key when creating an account. This allows emails sent to them later to be encrypted. If disabled, reports will be saved in plain text, and no asymmetric keys will be required. By default, false.</td></tr>
   <tr><td>SCORE_SPAMASSASSIN_SPAM</td><td>Points subtracted in case spamassassin detects the email as spam. By default, 3.</td></tr>
   <tr><td>SCORE_SPF_ERR</td><td>Points subtracted in case SPF is not correct or duplicated. By default, 3.</td></tr>
   <tr><td>SCORE_SPF_WARN</td><td>Points subtracted in case SPF softfails or any other error occurs. By default, 1.5.</td></tr>
@@ -110,3 +112,6 @@ This project wouldn't be possible without these amazing packages :heart: :
 - python-dotenv
   - License: [BSD 3-Clause](https://github.com/theskumar/python-dotenv/blob/main/LICENSE)
   - Repo: https://github.com/theskumar/python-dotenv 
+- cryptography
+  - License: [APACHE|BSD](https://github.com/pyca/cryptography/blob/main/LICENSE)
+  - Repo: https://github.com/pyca/cryptography
