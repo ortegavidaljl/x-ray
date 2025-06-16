@@ -1,0 +1,10 @@
+[Unit]
+Description=X-Ray mail processor
+
+[Service]
+Type=simple
+Restart=always
+ExecStart=/app/venv/bin/python ${DIRECTORY}/x-ray.py
+
+[Install]
+WantedBy=multi-user.target

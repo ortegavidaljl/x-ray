@@ -22,7 +22,7 @@ dependencies = ["aiosmtpd", "pymysql", "dkim", "dns", "uuid_utils", "dotenv", "c
 def log(message, priority='info'):
   log_func = getattr(logger, priority.lower(), logger.info)
   log_func(message)
-  #run(['postlog', '-p', priority, '-t', 'xray', message])
+  run(['postlog', '-p', priority, '-t', 'xray', message])
 
 for i in dependencies:
   if find_spec(i) is None:
@@ -34,7 +34,7 @@ load_dotenv()
 VERSION = 0.8
 
 PORT = int(getenv("PORT", 10031))
-HOSTNAME = getenv("HOSTNAME", "127.0.0.1")
+HOST = getenv("HOST", "127.0.0.1")
 
 DB_HOST = getenv("DB_HOST", "127.0.0.1")
 DB_PORT = int(getenv("DB_PORT", 3306))

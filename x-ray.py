@@ -5,7 +5,7 @@ from aiosmtpd.controller import Controller
 import signal
 import time
 import sys
-from utils.config import log, check_db, VERSION, PORT, HOSTNAME
+from utils.config import log, check_db, VERSION, PORT, HOST
 from utils.report import generate_report
 from utils.database import save_report
 
@@ -36,8 +36,8 @@ if __name__ == '__main__':
   log(f"Requirements and config checked; Starting...")
 
   handler = CustomHandler()
-  controller = Controller(handler, hostname=HOSTNAME, port=PORT)
-  log(f"Service started on {HOSTNAME}:{PORT}, version {VERSION}.")
+  controller = Controller(handler, hostname=HOST, port=PORT)
+  log(f"Service started on {HOST}:{PORT}, version {VERSION}.")
   # Run the event loop in a separate thread.
   controller.start()
 

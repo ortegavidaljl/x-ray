@@ -1,0 +1,5 @@
+user = ${DB_USERNAME}
+password = ${DB_PASSWORD}
+hosts = ${DB_HOST}
+dbname = ${DB_DATABASE}
+query = SELECT 1 from accounts WHERE name='%s'

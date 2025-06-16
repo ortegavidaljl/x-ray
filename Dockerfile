@@ -1,11 +1,9 @@
-FROM python:3.13-slim-bookworm
+FROM debian:bookworm-slim
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y git
+COPY . .
 
-RUN git clone https://github.com/ortegavidaljl/x-ray.git .
+RUN chmod +x setup.sh entrypoint.sh x-ray.py cli.py
 
-RUN pip install --no-cache-dir -r requirements.txt
-
-CMD ["python", "x-ray.py"]
+ENTRYPOINT ["/app/entrypoint.sh"]

@@ -68,9 +68,9 @@ As mentioned before, the script needs some data to work. These are the items tha
   <tr><th>Value</th><th>Info</th></tr>
 
   <tr><td colspan="2" align="center">:warning: Mandatory</td></tr>
-  <tr><td>* HOSTNAME</td><td>The hostname the aiosmtpd service will use. If not specified, <strong>127.0.0.1</strong> will be used.</td></tr>
+  <tr><td>* HOST</td><td>The host the aiosmtpd service will use. If not specified, <strong>127.0.0.1</strong> will be used.</td></tr>
   <tr><td>* PORT</td><td>The port the script will be listening. If not specified, <strong>10031</strong> will be used.</td></tr>
-  <tr><td>* DB_HOST</td><td>The hostname used for MySQL connection. If not specified, <strong>127.0.0.1</strong> will be used.</td></tr>
+  <tr><td>* DB_HOST</td><td>The host used for MySQL connection. If not specified, <strong>127.0.0.1</strong> will be used.</td></tr>
   <tr><td>* DB_PORT</td><td>The port used for MySQL connection. If not specified, <strong>3306</strong> will be used.</td></tr>
   <tr><td>DB_DATABASE</td><td>The name of the database that contains the needed structure (see database.sql file). This field is <strong>needed</strong>, so the script will not work if it isn't present.</td></tr>
   <tr><td>DB_USERNAME</td><td> The user for the database connection. This field is also <strong>needed</strong>.</td></tr>
