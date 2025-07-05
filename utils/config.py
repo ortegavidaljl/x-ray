@@ -22,7 +22,7 @@ dependencies = ["aiosmtpd", "pymysql", "dkim", "dns", "uuid_utils", "dotenv", "c
 def log(message, priority='info'):
   log_func = getattr(logger, priority.lower(), logger.info)
   log_func(message)
-  run(['postlog', '-p', priority, '-t', 'xray', message])
+  #run(['postlog', '-p', priority, '-t', 'xray', message])
 
 for i in dependencies:
   if find_spec(i) is None:

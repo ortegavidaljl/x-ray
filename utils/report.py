@@ -22,7 +22,7 @@ async def generate_report(envelope):
   data = envelope.content
   received_msg = email.message_from_bytes(data, policy=email.policy.SMTP)
 
-  email_trace = get_trace(received_msg)
+  email_trace = get_trace1(received_msg)
 
   if not email_trace:
     raise Exception("The email trace shouldn't be empty. This might indicate that the message was sent directly to this service.")
@@ -82,6 +82,52 @@ def get_header(score):
     return f"Uhmm... Something unexpected happened"
   
 def get_trace(email):
+    received_headers = list(email.get_all('Received') or [])
+    received_headers.reverse()  # Orden cronológico: origen al destino final
+
+    trace = []
+    for i, header in enumerate(received_headers):
+        hop = {'hop': i + 1, 'from': None, 'to': None, 'ip': None, 'time': None}
+
+        # Unificar en una sola línea para facilitar el parsing
+        line = ' '.join(header.splitlines())
+        
+        # Extraer fecha (lo que sigue al último punto y coma)
+        time_match = re.search(r';\s*(.+)$', line)
+        if time_match:
+            hop['time'] = time_match.group(1).strip()
+            line = re.sub(r';\s*.+$', '', line)  # eliminar timestamp del texto a analizar
+
+        # Extraer IP entre corchetes
+        ip_match = re.search(r'\[([^\]]+)\]', line)
+        if ip_match:
+            hop['ip'] = ip_match.group(1)
+
+        # Extraer dominios "from ... by ..."
+        from_by_match = re.search(r'from\s+([^\s(]+).*?by\s+([^\s(]+)', line, re.IGNORECASE)
+        if from_by_match:
+            hop['from'] = from_by_match.group(1)
+            hop['to'] = from_by_match.group(2)
+
+        # Solo "by"
+        elif re.search(r'\bby\s+([^\s(]+)', line, re.IGNORECASE):
+            hop['from'] = 'local'
+            hop['to'] = re.search(r'\bby\s+([^\s(]+)', line, re.IGNORECASE).group(1)
+
+        # Solo "from"
+        elif re.search(r'\bfrom\s+([^\s(]+)', line, re.IGNORECASE):
+            hop['from'] = re.search(r'\bfrom\s+([^\s(]+)', line, re.IGNORECASE).group(1)
+            hop['to'] = '?'
+
+        else:
+            hop['from'] = '?'
+            hop['to'] = '?'
+
+        trace.append(hop)
+
+    return trace
+
+def get_trace1(email):
   received_headers = list(email.get_all('Received') or []) #list(reversed(email.get_all('Received')))
   
   trace = []

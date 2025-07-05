@@ -2,7 +2,7 @@
 set -e
 
 if [ -f .setup_done ]; then
-  echo "✅ Setup ya fue ejecutado. Saltando..."
+  echo "✅ Setup has already been executed. Skipping..."
   exit 0
 fi
 
@@ -21,16 +21,16 @@ REQUIRED_VARS=(
 
 for var in "${REQUIRED_VARS[@]}"; do
   if [[ -z "${!var}" ]]; then
-    echo "❌ Variable de entorno no definida: $var"
+    echo "❌ Undefined environment variable: $var"
     exit 1
   fi
 done
 
-echo "✅ Variables cargadas correctamente"
+echo "✅ Variables loaded successfully"
 
 # --------- INSTALACIÓN DE DEPENDENCIAS ---------
 if command -v apt-get >/dev/null; then
-  echo "📦 Instalando paquetes con apt-get..."
+  echo "📦 Installing packages with apt-get..."
   apt-get update
   apt-get install -y --no-install-recommends \
     postfix postfix-mysql \
@@ -42,19 +42,19 @@ if command -v apt-get >/dev/null; then
 fi
 
 # --------- ENTORNO PYTHON ---------
-echo "🐍 Creando entorno virtual en /app/venv..."
+echo "🐍 Creating virtual environment in /app/venv..."
 python3 -m venv /app/venv
 source /app/venv/bin/activate
 
 if [ -f requirements.txt ]; then
-  echo "📦 Instalando dependencias desde requirements.txt..."
+  echo "📦 Installing dependencies from requirements.txt..."
   pip install --no-cache-dir -r requirements.txt
 else
-  echo "⚠️ No se encontró requirements.txt, omitiendo instalación de paquetes Python."
+  echo "⚠️ Failed to find requirements.txt, skipping Python package installation."
 fi
 
 # --------- CREACIÓN DE USUARIOS Y GRUPOS ---------
-echo "👤 Verificando usuarios/grupos del sistema..."
+echo "👤 Checking system users/groups..."
 
 if ! getent group vpostfix >/dev/null; then
   groupadd -g 1111 vpostfix
@@ -77,14 +77,19 @@ chown -R vpostfix:vpostfix /var/mail/virtual_domains
 chown -R spamd:spamd /home/spamassassin
 
 # --------- BASE DE DATOS ---------
-echo "🛠️ Iniciando setup de base de datos..."
+echo "🛠️ Starting database setup..."
 export MYSQL_PWD="$DB_PASSWORD"
 mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USERNAME" "$DB_DATABASE" < ./database.sql
-mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USERNAME" "$DB_DATABASE" -e "INSERT INTO domains (name) VALUES ('$DOMAIN')"
+if [ -n "$DOMAIN" ]; then
+  mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USERNAME" "$DB_DATABASE" -e "INSERT INTO domains (name, active) VALUES ('$DOMAIN', 1)"
+else
+  echo "⚠️ DOMAIN variable empty or not defined. A domain must be created via CLI or DB."
+fi
+
 unset MYSQL_PWD
 
 # --------- CONFIGURACIÓN ---------
-echo "⚙️ Aplicando configuración..."
+echo "⚙️ Applying Postfix/Spamassassin configuration..."
 
 envsubst < templates/main.cf > /etc/postfix/main.cf
 sed -i '/^smtp\s\+inet\s\+.*smtpd\s*$/a \
@@ -95,25 +100,31 @@ envsubst < templates/virtual_domains.cf > /etc/postfix/virtual_domains.cf
 envsubst < templates/virtual_users.cf > /etc/postfix/virtual_users.cf
 cp templates/local.cf /etc/mail/spamassassin/local.cf
 
-echo "📥 Actualizando reglas de SpamAssassin..."
-runuser -u spamd -- sa-update || echo "⚠️ No se pudieron descargar las reglas de spam (puede que no haya conexión o ya estén actualizadas)."
+echo "📥 Updating SpamAssassin rules..."
+runuser -u spamd -- sa-update || echo "⚠️ Could not download spam rules (may be offline or already updated)."
 
 # --------- SYSTEMD (opcional) ---------
 if command -v systemctl >/dev/null && systemctl --version >/dev/null 2>&1; then
-  echo "🔌 Instalando servicio X-Ray con systemd..."
+  echo "🔌 Installing X-Ray service with systemd..."
   export DIRECTORY=$(pwd)
   envsubst < templates/xray.service > /etc/systemd/system/xray.service
-  systemctl daemon-reexec
-  systemctl enable spamassassin postfix xray
-  systemctl start spamassassin postfix xray
+  systemctl daemon-reload
+  systemctl enable spamd
+  systemctl enable xray
+  systemctl enable postfix
+  systemctl start spamd
+  systemctl start xray
+  systemctl start postfix
+  
 else
   if [ -f /.dockerenv ]; then
-    echo -e "🐳 Detectado entorno Docker. Los servicios serán arrancados por entrypoint.sh. Ajustando rsyslog..."
+    echo -e "🐳 Docker environment detected. Services will be started by entrypoint.sh..."
+    echo -e "⚙️ Setting rsyslog..."
     sed -i 's/^module(load="imklog")/#module(load="imklog")/' /etc/rsyslog.conf
   else
-    echo "⚠️ Los servicios deberán iniciarse manualmente."
+    echo "⚠️ Services shall be started manually."
   fi
 fi
 
-echo "✅ Setup completado con éxito."
+echo "✅ Setup successfully completed."
 touch .setup_done

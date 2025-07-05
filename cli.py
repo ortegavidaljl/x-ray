@@ -1,4 +1,4 @@
-#!/bin/python3.11
+#!/app/venv/bin/python
 
 import os
 import sys

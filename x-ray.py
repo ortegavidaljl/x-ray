@@ -1,4 +1,4 @@
-#!/usr/bin/python3.11
+#!/app/venv/bin/python
 
 from aiosmtpd.controller import Controller
 

@@ -273,7 +273,7 @@ async def verify_arc(email):
       })
     elif cv == 'none':
       verify_result['message'] = "arc:notSigned"
-      verify_result['status'] = "warning"
+      verify_result['status'] = "info"
       verify_result['tests'].append({
         "name": 'dkimpy',
         "result": "No ARC signature found"
