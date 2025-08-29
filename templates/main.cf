@@ -10,10 +10,14 @@ home_mailbox = Maildir
 virtual_mailbox_domains = mysql:/etc/postfix/virtual_domains.cf
 virtual_mailbox_maps = mysql:/etc/postfix/virtual_users.cf
 virtual_mailbox_base = /var/mail/virtual_domains
-virtual_minimum_uid = 1113
-virtual_uid_maps = static:1113
-virtual_gid_maps = static:1113
+virtual_minimum_uid = 1120
+virtual_uid_maps = static:1120
+virtual_gid_maps = static:1120
 
-content_filter=scan:[127.0.0.1]:${PORT}
+content_filter=xray:[127.0.0.1]:${PORT}
 receive_override_options = no_address_mappings
 smtp_send_xforward_command=yes
+
+smtpd_milters = inet:localhost:11332
+milter_default_action = accept
+milter_protocol = 6

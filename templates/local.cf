@@ -1,8 +1,0 @@
-use_pyzor 1
-pyzor_timeout 10
-
-add_header all Status _YESNOCAPS_
-add_header all Score _SCORE_
-add_header all Required _REQD_
-add_header all Report _REPORT_
-add_header all Pyzor _PYZOR_

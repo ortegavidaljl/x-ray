@@ -1,7 +1,3 @@
-spamassassin unix -     n       n       -       -       pipe
-  user=spamd argv=/usr/bin/spamc -f -e
-  /usr/sbin/sendmail -oi -f ${sender} ${recipient}
-
-scan      unix  -       -       n       -       10      smtp
+xray      unix  -       -       n       -       10      smtp
   -o smtp_send_xforward_command=yes
   -o disable_mime_output_conversion=yes

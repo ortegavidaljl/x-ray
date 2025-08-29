@@ -7,7 +7,7 @@ SET time_zone = "+00:00";
 /*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
 /*!40101 SET NAMES utf8mb4 */;
 
-CREATE TABLE `accounts` (
+CREATE TABLE IF NOT EXISTS `accounts` (
   `id` bigint(20) UNSIGNED NOT NULL,
   `domain_id` bigint(20) UNSIGNED NOT NULL,
   `name` varchar(255) NOT NULL,
@@ -15,14 +15,14 @@ CREATE TABLE `accounts` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE `domains` (
+CREATE TABLE IF NOT EXISTS `domains` (
   `id` bigint(20) UNSIGNED NOT NULL,
   `name` varchar(255) NOT NULL,
   `active` tinyint(1) NOT NULL DEFAULT 0,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE `reports` (
+CREATE TABLE IF NOT EXISTS `reports` (
   `id` char(36) NOT NULL,
   `account_id` bigint(20) UNSIGNED NOT NULL,
   `report` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`report`)),

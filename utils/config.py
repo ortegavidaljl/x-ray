@@ -8,8 +8,12 @@ import logging
 from urllib import request
 import re
 
+load_dotenv()
+
+LOG_LEVEL = getenv("LOG_LEVEL", "ERROR").upper()
+
 logger = logging.getLogger("x-ray")
-logger.setLevel(logging.INFO)
+logger.setLevel(getattr(logging, LOG_LEVEL, logging.ERROR))
 handler = logging.StreamHandler()
 formatter = logging.Formatter('%(asctime)s | %(levelname)s > %(message)s', datefmt='%d/%m/%Y %H:%M:%S')
 handler.setFormatter(formatter)
@@ -29,8 +33,6 @@ for i in dependencies:
     log(f"Required dependency '{i}' is not installed.", "error")
     exit(1)
 
-load_dotenv()
-
 VERSION = 0.8
 
 PORT = int(getenv("PORT", 10031))
@@ -44,9 +46,11 @@ DB_PASSWORD = getenv("DB_PASSWORD")
 
 ENCRYPTION = getenv("ENCRYPTION", "false").lower() in ("true", "1", "yes", "on")
 
-SCORE_SPAMASSASSIN_SPAM = float(getenv("SCORE_SPAMASSASSIN_SPAM", 3))
+SCORE_RSPAMD_SPAM = float(getenv("SCORE_RSPAMD_SPAM", 3))
+SCORE_CLAMAV_VIRUS = float(getenv("SCORE_CLAMAV_VIRUS", 5))
 SCORE_SPF_ERR = float(getenv("SCORE_SPF_ERR", 3))
 SCORE_SPF_WARN = float(getenv("SCORE_SPF_WARN", 1.5))
+SCORE_DMARC_ERR = float(getenv("SCORE_DMARC_ERR", 4))
 SCORE_MX_WARN = float(getenv("SCORE_MX_WARN", 1))
 SCORE_RDNS_WARN = float(getenv("SCORE_RDNS_WARN", 1))
 SCORE_DKIM_NO = float(getenv("SCORE_DKIM_NO", 1))

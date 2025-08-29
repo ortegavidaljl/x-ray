@@ -9,7 +9,8 @@ from utils.config import VERSION
 import datetime
 
 from utils.rbl import check_rbl
-from utils.spamassassin import check_spamassassin
+from utils.spam import check_rspamd, check_spamassassin
+from utils.extras import check_extras
 from utils.authentication import check_authentication
 from utils.scoring import EmailScore
 
@@ -36,15 +37,18 @@ async def generate_report(envelope):
   ip = sender[1]
 
   # Ejecutar tareas en paralelo
-  spam_task = asyncio.create_task(check_spamassassin(received_msg, score))
+  rspamd_task = asyncio.create_task(check_rspamd(received_msg, score))
+  #clamav_task = asyncio.create_task(check_clamav(received_msg, score))
+  #spamd_task = asyncio.create_task(check_spamassassin(received_msg, score))
   auth_task = asyncio.create_task(check_authentication(mail_from, data, received_msg, ip, helo, score))
+  extras_task = asyncio.create_task(check_extras(mail_from, data, received_msg, ip, helo, score))
   rbl_task = asyncio.create_task(check_rbl(ip, score))
 
   # Esperar resultados
-  spamassassin_report, authentication_report, rbl_report = await asyncio.gather(spam_task, auth_task, rbl_task)
+  rspamd_report, extras_report, authentication_report, rbl_report = await asyncio.gather(rspamd_task, extras_task, auth_task, rbl_task)
 
   general_report = {
-    "message": "message:info",
+    "status": "info",
     "message_date": datetime.datetime.strptime(received_msg['Date'], '%a, %d %b %Y %H:%M:%S %z').strftime('%d-%m-%Y %H:%M:%S'),
     "header": get_header(score),
     "score": score.email_score,
@@ -54,16 +58,17 @@ async def generate_report(envelope):
     "source_helo": helo,
     "sent_from": mail_from,
     "sent_to": rcpt_tos[0],
-    "processed_in": (time.time() - start_proc_time) + rbl_report['processed_in'],
-    "spamassassin_version": spamassassin_report['version'],
+    "processed_in": time.time() - start_proc_time,
+    "rbl_processed_in": rbl_report['processed_in'],
     "tester_version": VERSION,
     "complete_message": envelope.content.decode('utf8', errors='replace'),
-    "trace": email_trace
+    #"trace": email_trace
   }
 
   return {
     "general": general_report,
-    "spamassassin": spamassassin_report,
+    "spam": rspamd_report,
+    "extras": extras_report,
     "authentication": authentication_report,
     "rbl": rbl_report
   }
@@ -82,6 +87,96 @@ def get_header(score):
     return f"Uhmm... Something unexpected happened"
   
 def get_trace(email):
+  received_headers = list(email.get_all('Received') or [])
+  received_headers.reverse()  # Del primer al último hop
+
+  trace = []
+  server_ip_map = {}
+
+  
+  for header in received_headers:
+      line = ' '.join(header.splitlines())
+      from_match = re.search(r'from\s+([^\s(]+).*?\[([0-9a-fA-F:.]+)\]', line)
+      if from_match:
+          server_name = from_match.group(1)
+          ip = from_match.group(2)
+          if server_name not in server_ip_map:
+              server_ip_map[server_name] = ip
+
+  
+  for i, header in enumerate(received_headers):
+      hop = {
+          'hop': i + 1,
+          'server': None,
+          'ip': None,
+          'time': None
+      }
+
+      line = ' '.join(header.splitlines())
+
+      # Extraer la fecha
+      time_match = re.search(r';\s*(.+)$', line)
+      if time_match:
+          hop['time'] = time_match.group(1).strip()
+
+      # Extraer servidor que recibe (BY)
+      by_match = re.search(r'\bby\s+([^\s(]+)', line, re.IGNORECASE)
+      if by_match:
+          server = by_match.group(1)
+          hop['server'] = server
+          hop['ip'] = server_ip_map.get(server)
+      else:
+          hop['server'] = '?'
+
+      trace.append(hop)
+
+  return trace
+
+def get_trace_lele(email):
+  received_headers = list(email.get_all('Received') or [])
+  received_headers.reverse()
+
+  trace = []
+  for i, header in enumerate(received_headers):
+      hop = {'hop': i + 1, 'from': None, 'to': None, 'ip': None, 'time': None}
+
+      line = ' '.join(header.splitlines())
+
+      # Extraer fecha
+      time_match = re.search(r';\s*(.+)$', line)
+      if time_match:
+          hop['time'] = time_match.group(1).strip()
+          line = re.sub(r';\s*.+$', '', line)
+
+      # IP (mejor soporte IPv6)
+      ip_match = re.search(r'\[([0-9a-fA-F:.]+)\]', line)
+      if ip_match:
+          hop['ip'] = ip_match.group(1)
+
+      # Extraer from y by
+      from_by_match = re.search(r'\bfrom\s+([^\s(]+).*?\bby\s+([^\s(]+)', line, re.IGNORECASE)
+      if from_by_match:
+          hop['from'] = from_by_match.group(1).lower()
+          hop['to'] = from_by_match.group(2).lower()
+      else:
+          by_match = re.search(r'\bby\s+([^\s(]+)', line, re.IGNORECASE)
+          from_match = re.search(r'\bfrom\s+([^\s(]+)', line, re.IGNORECASE)
+
+          if by_match:
+              hop['from'] = 'local'
+              hop['to'] = by_match.group(1).lower()
+          elif from_match:
+              hop['from'] = from_match.group(1).lower()
+              hop['to'] = '?'
+          else:
+              hop['from'] = '?'
+              hop['to'] = '?'
+
+      trace.append(hop)
+
+  return trace
+
+def get_trace2(email):
     received_headers = list(email.get_all('Received') or [])
     received_headers.reverse()  # Orden cronológico: origen al destino final
 

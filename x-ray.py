@@ -1,5 +1,3 @@
-#!/app/venv/bin/python
-
 from aiosmtpd.controller import Controller
 
 import signal
@@ -38,7 +36,6 @@ if __name__ == '__main__':
   handler = CustomHandler()
   controller = Controller(handler, hostname=HOST, port=PORT)
   log(f"Service started on {HOST}:{PORT}, version {VERSION}.")
-  # Run the event loop in a separate thread.
   controller.start()
 
   try:

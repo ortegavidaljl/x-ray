@@ -1,130 +1,178 @@
 #!/bin/bash
 set -e
 
-if [ -f .setup_done ]; then
-  echo "✅ Setup has already been executed. Skipping..."
+if [ $UID -ne 0 ];then
+  echo "This script must be run by root"
+  exit 1
+fi
+
+if [ -f /.dockerenv ]; then
+  APP_DIR="/opt/x-ray"
+else
+  APP_DIR="$(pwd)"
+fi
+
+if [ -f "$APP_DIR"/.setup_done ]; then
+  echo "[!] Setup has already been executed"
   exit 0
 fi
 
-# --------- ENV INJECTION ---------
+# ENV INJECTION --------
+
 if [ -f .env ]; then
   set -a
   source .env
   set +a
 fi
 
-# --------- VALIDACIÓN ---------
-REQUIRED_VARS=(
-  DB_HOST DB_PORT DB_USERNAME DB_PASSWORD DB_DATABASE
-  DOMAIN PORT
-)
+# ENV VALIDATION --------
+
+REQUIRED_VARS=(DB_HOST DB_PORT DB_USERNAME DB_PASSWORD DB_DATABASE PORT)
 
 for var in "${REQUIRED_VARS[@]}"; do
   if [[ -z "${!var}" ]]; then
-    echo "❌ Undefined environment variable: $var"
+    echo "[!] Undefined environment variable: $var"
     exit 1
   fi
 done
 
-echo "✅ Variables loaded successfully"
+# DEPENDENCY INSTALLATION --------
 
-# --------- INSTALACIÓN DE DEPENDENCIAS ---------
 if command -v apt-get >/dev/null; then
-  echo "📦 Installing packages with apt-get..."
+
+  echo "=> Installing packages with apt-get ..."
   apt-get update
-  apt-get install -y --no-install-recommends \
-    postfix postfix-mysql \
-    spamassassin spamc spamd pyzor spfquery \
-    mariadb-client rsyslog \
-    python3 python3-pip python3.11-venv \
-    gettext gnupg
+  DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    lsb-release curl gpg wget gettext gnupg \
+    postfix postfix-mysql mariadb-client \
+    clamav clamav-daemon clamav-freshclam \
+    spf-tools-perl python3 python3-pip python3.11-venv
+
+  CODENAME=`lsb_release -c -s`
+  mkdir -p /etc/apt/keyrings
+  wget -O- https://rspamd.com/apt-stable/gpg.key | gpg --dearmor | tee /etc/apt/keyrings/rspamd.gpg > /dev/null
+  echo "deb [signed-by=/etc/apt/keyrings/rspamd.gpg] http://rspamd.com/apt-stable/ $CODENAME main" | tee /etc/apt/sources.list.d/rspamd.list
+  echo "deb-src [signed-by=/etc/apt/keyrings/rspamd.gpg] http://rspamd.com/apt-stable/ $CODENAME main"  | tee -a /etc/apt/sources.list.d/rspamd.list
+  apt-get update
+  apt-get install -y --no-install-recommends rspamd
+
   apt-get clean
 fi
 
-# --------- ENTORNO PYTHON ---------
-echo "🐍 Creating virtual environment in /app/venv..."
-python3 -m venv /app/venv
-source /app/venv/bin/activate
+# PYTHON ENV SETUP --------
 
-if [ -f requirements.txt ]; then
-  echo "📦 Installing dependencies from requirements.txt..."
-  pip install --no-cache-dir -r requirements.txt
+echo "=> Creating virtual environment..."
+python3 -m venv $APP_DIR/venv
+source $APP_DIR/venv/bin/activate
+
+if [ -f "$APP_DIR"/requirements.txt ]; then
+  echo "=> Installing dependencies from requirements.txt ..."
+  pip install --no-cache-dir -r $APP_DIR/requirements.txt
 else
-  echo "⚠️ Failed to find requirements.txt, skipping Python package installation."
+  echo "[!] Failed to find requirements.txt, skipping Python package installation"
 fi
 
-# --------- CREACIÓN DE USUARIOS Y GRUPOS ---------
-echo "👤 Checking system users/groups..."
+# SYSTEM USER/GROUP CREATION --------
+
+echo "=> Checking system users/groups ..."
 
 if ! getent group vpostfix >/dev/null; then
-  groupadd -g 1111 vpostfix
+  groupadd -g 1120 vpostfix
 fi
 
 if ! getent passwd vpostfix >/dev/null; then
-  useradd -u 1111 -g vpostfix -s /bin/false -d /nonexistent vpostfix
+  useradd -u 1120 -g vpostfix -s /bin/false -d /nonexistent vpostfix
 fi
 
-if ! getent group spamd >/dev/null; then
-  groupadd -g 1112 spamd
+if ! getent group rspamd >/dev/null; then
+  groupadd -g 1111 rspamd
 fi
 
-if ! getent passwd spamd >/dev/null; then
-  useradd -u 1112 -g spamd -s /bin/false -d /home/spamassassin spamd
+if ! getent passwd rspamd >/dev/null; then
+  useradd -u 1111 -g rspamd -s /usr/sbin/nologin -d /home/rspamd -r rspamd
 fi
 
-mkdir -p /var/mail/virtual_domains /home/spamassassin
-chown -R vpostfix:vpostfix /var/mail/virtual_domains
-chown -R spamd:spamd /home/spamassassin
+if ! getent group clamav >/dev/null; then
+  groupadd -g 1113 clamav
+fi
 
-# --------- BASE DE DATOS ---------
-echo "🛠️ Starting database setup..."
-export MYSQL_PWD="$DB_PASSWORD"
-mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USERNAME" "$DB_DATABASE" < ./database.sql
-if [ -n "$DOMAIN" ]; then
-  mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USERNAME" "$DB_DATABASE" -e "INSERT INTO domains (name, active) VALUES ('$DOMAIN', 1)"
+if ! getent passwd clamav >/dev/null; then
+  useradd -u 1113 -g clamav -s /usr/sbin/nologin -d /nonexistent -r clamav
+fi
+
+# DB DEPLOYMENT --------
+
+if [ "$WEBAPP" = "true" ]; then
+  echo "[!] DB won't be deployed because the WEBAPP variable was set to true"
 else
-  echo "⚠️ DOMAIN variable empty or not defined. A domain must be created via CLI or DB."
+  echo "=> Starting database setup ..."
+  export MYSQL_PWD="$DB_PASSWORD"
+  mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USERNAME" "$DB_DATABASE" < $APP_DIR/database.sql
+  if [ -n "$DOMAIN" ]; then
+    mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USERNAME" "$DB_DATABASE" -e "INSERT IGNORE INTO domains (name, active) VALUES ('$DOMAIN', 1)"
+  else
+    echo "[!] DOMAIN variable empty or not defined. A domain must be created via CLI or DB"
+  fi
+
+  unset MYSQL_PWD
 fi
 
-unset MYSQL_PWD
+# SERVICE CONFIGURATION --------
 
-# --------- CONFIGURACIÓN ---------
-echo "⚙️ Applying Postfix/Spamassassin configuration..."
+echo "=> Creating/updating configuration ..."
 
-envsubst < templates/main.cf > /etc/postfix/main.cf
-sed -i '/^smtp\s\+inet\s\+.*smtpd\s*$/a \
-  -o content_filter=spamassassin:dummy -o receive_override_options=no_address_mappings -o smtp_send_xforward_command=yes
-' /etc/postfix/master.cf
-cat templates/master.cf >> /etc/postfix/master.cf
-envsubst < templates/virtual_domains.cf > /etc/postfix/virtual_domains.cf
-envsubst < templates/virtual_users.cf > /etc/postfix/virtual_users.cf
-cp templates/local.cf /etc/mail/spamassassin/local.cf
+mkdir -p /var/mail/virtual_domains /var/run/clamav
+chown -R vpostfix:vpostfix /var/mail/virtual_domains
+chown -R clamav:clamav /var/run/clamav
+chmod 755 /var/run/clamav
 
-echo "📥 Updating SpamAssassin rules..."
-runuser -u spamd -- sa-update || echo "⚠️ Could not download spam rules (may be offline or already updated)."
+cat $APP_DIR/templates/master.cf >> /etc/postfix/master.cf
+envsubst < $APP_DIR/templates/main.cf > /etc/postfix/main.cf
+envsubst < $APP_DIR/templates/virtual_domains.cf > /etc/postfix/virtual_domains.cf
+envsubst < $APP_DIR/templates/virtual_users.cf > /etc/postfix/virtual_users.cf
+cp -r $APP_DIR/templates/rspamd/local.d/* /etc/rspamd/local.d/
+cp -r $APP_DIR/templates/rspamd/override.d/* /etc/rspamd/override.d/
 
-# --------- SYSTEMD (opcional) ---------
+if [ "$DISABLE_FRESHCLAM_TEST" = "true" ]; then
+  echo "[!] Freshclam database test has been disabled"
+  sed -i -e 's/TestDatabases yes/TestDatabases no/g' /etc/clamav/freshclam.conf
+fi
+
+freshclam
+
+if [ -f /.dockerenv ]; then
+cat <<EOF > /etc/crontab
+SHELL=/bin/sh
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+
+4 * * * * root /usr/bin/freshclam --quiet
+EOF
+fi
+
+# SYSTEMD --------
+
 if command -v systemctl >/dev/null && systemctl --version >/dev/null 2>&1; then
-  echo "🔌 Installing X-Ray service with systemd..."
-  export DIRECTORY=$(pwd)
-  envsubst < templates/xray.service > /etc/systemd/system/xray.service
+  echo "=> Configuring systemd ..."
+  envsubst < $APP_DIR/templates/xray.service > /etc/systemd/system/xray.service
   systemctl daemon-reload
-  systemctl enable spamd
+  systemctl enable rspamd
   systemctl enable xray
   systemctl enable postfix
-  systemctl start spamd
+  systemctl enable clamav-daemon
+  systemctl start clamav-daemon
+  systemctl start rspamd
   systemctl start xray
   systemctl start postfix
-  
 else
   if [ -f /.dockerenv ]; then
-    echo -e "🐳 Docker environment detected. Services will be started by entrypoint.sh..."
-    echo -e "⚙️ Setting rsyslog..."
-    sed -i 's/^module(load="imklog")/#module(load="imklog")/' /etc/rsyslog.conf
+    echo -e "[!] Docker environment detected. Services will be managed by s6 ..."
   else
-    echo "⚠️ Services shall be started manually."
+    echo "[!] Services shall be started manually"
   fi
 fi
 
-echo "✅ Setup successfully completed."
-touch .setup_done
+# FINISH --------
+
+touch $APP_DIR/.setup_done
+
+echo "[+] Setup successfully completed"

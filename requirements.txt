@@ -5,3 +5,4 @@ dnspython>=2.6.1
 uuid_utils>=0.10.0
 python-dotenv>=1.0.1
 cryptography>=45.0.1
+checkdmarc>=5.9.6

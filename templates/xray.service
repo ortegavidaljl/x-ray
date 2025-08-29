@@ -4,7 +4,7 @@ Description=X-Ray mail processor
 [Service]
 Type=simple
 Restart=always
-ExecStart=/app/venv/bin/python ${DIRECTORY}/x-ray.py
+ExecStart=${APP_DIR}/venv/bin/python ${APP_DIR}/x-ray.py
 
 [Install]
 WantedBy=multi-user.target
