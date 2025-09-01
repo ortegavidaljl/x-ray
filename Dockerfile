@@ -58,5 +58,7 @@ WORKDIR /opt/x-ray
 COPY . .
 
 RUN chmod +x setup.sh x-ray.py cli.py
+ENV APP_DIR=/opt/x-ray
+RUN bash -c "source /opt/x-ray/setup.sh && install_packages && setup_python_env && create_users"
 
 ENTRYPOINT ["/init"]
