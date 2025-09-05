@@ -22,7 +22,6 @@ logger.propagate = False
 
 dependencies = ["aiosmtpd", "pymysql", "dkim", "dns", "uuid_utils", "dotenv", "cryptography"]
 
-# This function lets us output data into the postfix log file.
 def log(message, priority='info'):
   log_func = getattr(logger, priority.lower(), logger.info)
   log_func(message)
@@ -33,7 +32,7 @@ for i in dependencies:
     log(f"Required dependency '{i}' is not installed.", "error")
     exit(1)
 
-VERSION = 0.8
+VERSION = "1.0.0"
 
 PORT = int(getenv("PORT", 10031))
 HOST = getenv("HOST", "127.0.0.1")

@@ -138,7 +138,10 @@ configure_services() {
     sed -i -e 's/TestDatabases yes/TestDatabases no/g' /etc/clamav/freshclam.conf
   fi
 
-  freshclam
+  sed -i 's/^LogFile/#&/' /etc/clamav/clamd.conf
+  sed -i 's/^LogSyslog/#&/' /etc/clamav/clamd.conf
+
+  freshclam --quiet
 
   if is_container; then
   cat <<EOF > /etc/crontab
@@ -199,7 +202,7 @@ main() {
 
   if is_container; then
     APP_DIR="/opt/x-ray"
-    MODE="docker"
+    MODE="container"
   else
     APP_DIR="$(pwd)"
     MODE="normal"
@@ -211,7 +214,7 @@ main() {
   fi
 
   case "$MODE" in
-    docker)
+    container)
       load_env
       deploy_db
       configure_services
